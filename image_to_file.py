@@ -3,23 +3,21 @@ import sys
 
 def process_pixels(image, out_file, color):
     for pixel in image.getdata():
-        R = pixel[0]
-        G = pixel[1]
-        B = pixel[2]
-    
-        A = pixel[3] if len(pixel) > 3 else 255
+        R, G, B, A = pixel
+
         if A != 255:
             break
 
         if color == 0:
+            gray = (R + G + B) // 3
+            out_file.write(gray.to_bytes(1, 'little'))
+        else:
             out_file.write(R.to_bytes(1, 'little'))
             out_file.write(G.to_bytes(1, 'little'))
             out_file.write(B.to_bytes(1, 'little'))
-        else:
-            out_file.write(R.to_bytes(1, 'little'))
 
 def image_to_file(color, in_path, out_path):
-    img = Image.open(in_path)
+    img = Image.open(in_path).convert("RGBA")
     out_file = open(out_path, 'wb')
 
     process_pixels(img, out_file, color)

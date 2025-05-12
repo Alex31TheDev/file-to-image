@@ -1,58 +1,54 @@
 from PIL import Image, ImageDraw
 import sys
+import os
 import math
 
 def open_file(path):
-    f = open(path, 'rb')
-    f.seek(0, 2)
+    file = open(path, 'rb')
+    file.seek(0, os.SEEK_END)
 
-    size = f.tell()
-    f.seek(0)
+    size = file.tell()
+    file.seek(0)
 
-    return f, size
+    return file, size
 
 def calculate_width(size, color):
-    channels = 3 if color == 0 else 1
+    channels = 1 if color == 0 else 3
     pixels = math.ceil(size / channels)
 
     return math.ceil(math.sqrt(pixels))
 
 def process_file(file, draw, width, color):
-    i = 0
+    for i in range(width * width):
+        data = file.read(1 if color == 0 else 3)
 
-    while True:
-        b1 = file.read(1)
-
-        if not b1:
+        if not data:
             break
 
-        R = int.from_bytes(b1, 'little')
+        if color == 1 and len(data) < 3:
+            data += b"\x00" * (3 - len(data))
 
         if color == 0:
-            b2 = file.read(1) or b"\x00"
-            b3 = file.read(1) or b"\x00"
-
-            G = int.from_bytes(b2, 'little')
-            B = int.from_bytes(b3, 'little')
+            gray = data[0]
+            R = G = B = gray
         else:
-            G = B = R
+            R, G, B = data
 
         x = i % width
         y = i // width
 
         draw.point((x, y), fill=(R, G, B))
-        i += 1
 
 def file_to_image(color, in_path, out_path):
-    f, size = open_file(in_path)
+    file, size = open_file(in_path)
     width = calculate_width(size, color)
 
     img = Image.new('RGBA', (width, width))
     draw = ImageDraw.Draw(img)
 
-    process_file(f, draw, width, color)
+    process_file(file, draw, width, color)
 
-    f.close()
+    file.close()
     img.save(out_path)
 
 usage = 'Usage: python file_to_image.py <color> <input path> <output path>'
